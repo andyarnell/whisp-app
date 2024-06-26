@@ -6,12 +6,15 @@ import ErrorAlert from '@/components/ErrorBar';
 import { Tabs } from '@/components/Tabs';
 import { Buttons } from '@/components/Buttons';
 import Image from 'next/image';
+import AgreementCheckbox from '@/components/AgreementCheckbox';
+import { downloadSampleDocument } from '@/utils/downloadSampleDocument';
 
 const GeoIdInput: React.FC = () => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [activeTab, setActiveTab] = useState<number>(0);
-
-    const { error, geoIds, isDisabled } = useStore();
+    const [agreedTerms, setAgreedTerms] = useState<boolean>(false);
+    const [isDisabled, setIsDisabled] = useState<boolean>(false);
+    const { error, geoIds } = useStore();
 
     const setGeoIds = (newGeoIds: string[]) => {
         useStore.setState({ geoIds: newGeoIds });
@@ -21,8 +24,8 @@ const GeoIdInput: React.FC = () => {
 
     useEffect(() => {
         const hasGeoIds = geoIds?.some(geoId => geoId.trim() !== '');
-        useStore.setState({ isDisabled: !hasGeoIds });
-    }, [geoIds])
+        setIsDisabled(!(agreedTerms && hasGeoIds))
+    }, [geoIds, agreedTerms])
 
     const analyze = async () => {
         setIsLoading(true)
@@ -74,28 +77,28 @@ const GeoIdInput: React.FC = () => {
         useStore.setState({ error: "", geoIds: [""], isDisabled: true, selectedFile: "" });
     };
 
-    const downloadSampleDocument = () => {
-        console.log('Downloading sample document...');
-        
-        // Create a new anchor element
-        const element = document.createElement('a');
-        
-        // Set the href to the path of the file you want to download
-        element.setAttribute('href', '/geoids.txt');
-        
-        // Set the download attribute to a specific filename or leave it empty to use the original filename
-        element.setAttribute('download', 'geoids.txt');
-        
-        // Append the anchor to the body
-        document.body.appendChild(element);
-        
-        // Programmatically click the anchor to trigger the download
-        element.click();
-        
-        // Remove the anchor from the body once the download is initiated
-        document.body.removeChild(element);
-    };
-    
+    const handleAgreementChange = (agreed: boolean) => {
+        setAgreedTerms(agreed);
+    }
+
+    const renderExampleButton = () => (
+        <button
+            onClick={() => { downloadSampleDocument('/civ_plot.json') }}
+            className="flex mt-2 items-center justify-center w-28 px-4 py-2 bg-blue-500 hover:bg-blue-700 text-white rounded focus:outline-none focus:shadow-outline"
+            type="button"
+        >
+            <Image
+                className='mr-2'
+                onClick={() => useStore.setState({ error: '' })}
+                src="/download-outline.svg"
+                alt="download-outline"
+                width={20}
+                height={20}
+            />
+            Example
+        </button>
+    )
+
 
     return (
         <div className="md:max-w-2xl p-5 border border-gray-300 bg-gray-800 rounded shadow-md mx-auto my-4 relative">
@@ -110,26 +113,15 @@ const GeoIdInput: React.FC = () => {
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
             />
-            <div className="flex mx-2 items-center justify-between">
-                <button
-                    onClick={downloadSampleDocument}
-                    className="flex mt-2 items-center justify-center w-28 px-4 py-2 bg-blue-500 hover:bg-blue-700 text-white rounded focus:outline-none focus:shadow-outline"
-                    type="button"
-                >
-                    <Image
-                        className='mr-2'
-                        onClick={() => useStore.setState({ error: '' })}
-                        src="/download-outline.svg"
-                        alt="download-outline"
-                        width={20}
-                        height={20}
-                    />
-                    Example
-                </button>
+            <div className="flex items-center mx-2 justify-between">
+                {renderExampleButton()}
+            </div>
+            <div className="flex items-center mx-2 justify-between">
+                <AgreementCheckbox onAgreementChange={handleAgreementChange} />
                 <Buttons clearInput={clearInput} analyze={analyze} isDisabled={isDisabled} />
             </div>
         </div>
     );
 };
 
-export default GeoIdInput;
+export default GeoIdInput
